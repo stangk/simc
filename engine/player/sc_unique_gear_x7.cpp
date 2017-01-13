@@ -509,7 +509,7 @@ void item::coagulated_nightwell_residue_buff(special_effect_t& effect)
     
     effect.proc_flags_ = PF_ALL_DAMAGE;
     effect.proc_flags2_ = PF2_ALL_HIT;
-    effect.custom_buff = new nightwell_energy_stack_buff_t(effect);
+    effect.custom_buff = b;
 
     new dbc_proc_callback_t(effect.item, effect);
 }
@@ -549,15 +549,13 @@ void item::coagulated_nightwell_residue_spell( special_effect_t& effect )
         {
             action_t::execute();
 
-            // HACK: look for the CORRECT "nightwell_energy" buff (there are 2 with same name and source)
-            for(buff_t *b : player->buff_list)
+            buff_t *b = buff_t::find(player, "nightwell_energy", player);
+
+            if(b->check())
             {
-                if(b->check() && strcmp(b->name(), "nightwell_energy") == 0)
-                {
-                    int stacks = b->stack();
-                    absorb->trigger(1, stack_amt * stacks * (1.0 + player->cache.damage_versatility()));
-                    b->decrement(stacks);
-                }
+                int stacks = b->stack();
+                absorb->trigger(1, stack_amt * stacks * (1.0 + player->cache.damage_versatility()));
+                b->decrement(stacks);
             }
         }
 
