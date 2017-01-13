@@ -83,6 +83,7 @@ namespace item
   void wriggling_sinew( special_effect_t& );
   void bough_of_corruption( special_effect_t& );
   void ursocs_rending_paw( special_effect_t& );
+  void goblet_of_nightmarish_ichor( special_effect_t& );
 
   // 7.1.5 Raid
   void draught_of_souls( special_effect_t&        );
@@ -1915,6 +1916,24 @@ void item::ursocs_rending_paw( special_effect_t& effect )
   effect.execute_action = rend;
 
   new dbc_proc_callback_t( effect.item, effect );
+}
+
+void item::goblet_of_nightmarish_ichor(special_effect_t& effect)
+{
+    double rating_amount = item_database::apply_combat_rating_multiplier(*effect.item,
+        effect.driver()->effectN(2).average(effect.item));
+
+    buff_t *aura = stat_buff_creator_t(effect.player, "nightmarish_ichor",
+        effect.player->find_spell(222027), effect.item)
+        .add_stat(STAT_VERSATILITY_RATING, rating_amount);
+
+    // TODO: until PF_ANY_DAMAGE_TAKEN works, use PF_MELEE since it's Close Enough(TM)
+    //effect.proc_flags_ = PF_ANY_DAMAGE_TAKEN;
+    effect.proc_flags_ = PF_MELEE;
+    effect.proc_flags2_ = PF2_ALL_HIT;
+    effect.custom_buff = aura;
+
+    new dbc_proc_callback_t( effect.item, effect );
 }
 
 // Draught of Souls =========================================================
@@ -4155,6 +4174,7 @@ void unique_gear::register_special_effects_x7()
   register_special_effect( 222705, item::bough_of_corruption    );
   register_special_effect( 221767, item::ursocs_rending_paw     );
   register_special_effect( 222046, item::wriggling_sinew        );
+  register_special_effect( 222015, item::goblet_of_nightmarish_ichor );
 
   /* Legion 7.1.5 Raid */
   register_special_effect( 225141, item::draught_of_souls        );
