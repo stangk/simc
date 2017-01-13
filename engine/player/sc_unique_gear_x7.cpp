@@ -55,6 +55,8 @@ namespace item
   void tempered_egg_of_serpentrix( special_effect_t& );
   void gnawed_thumb_ring( special_effect_t& );
   void naraxas_spiked_tongue( special_effect_t& );
+  void coagulated_nightwell_residue_spell(special_effect_t&);
+  void coagulated_nightwell_residue_buff(special_effect_t&);
 
   // 7.1 Dungeon
   void arans_relaxing_ruby( special_effect_t& );
@@ -486,6 +488,92 @@ void item::naraxas_spiked_tongue( special_effect_t& effect )
   }
 
   new dbc_proc_callback_t( effect.item, effect );
+}
+
+void item::coagulated_nightwell_residue_buff(special_effect_t& effect)
+{
+    struct nightwell_energy_stack_buff_t : public buff_t
+    {
+        nightwell_energy_stack_buff_t(const special_effect_t& effect)
+            : buff_t(buff_creator_basics_t(effect.player, "nightwell_energy",
+                effect.player->find_spell(214572)))
+        {
+
+        }
+    };
+
+    buff_t* b = buff_t::find(effect.player, "nightwell_energy");
+
+    if(!b)
+        b = new nightwell_energy_stack_buff_t(effect);
+    
+    effect.proc_flags_ = PF_ALL_DAMAGE;
+    effect.proc_flags2_ = PF2_ALL_HIT;
+    effect.custom_buff = new nightwell_energy_stack_buff_t(effect);
+
+    new dbc_proc_callback_t(effect.item, effect);
+}
+
+void item::coagulated_nightwell_residue_spell( special_effect_t& effect )
+{
+    struct nightwell_energy_buff_t : public absorb_buff_t
+    {
+        nightwell_energy_buff_t(const special_effect_t& e)
+            :absorb_buff_t(absorb_buff_creator_t(e.player, "nightwell_energy_shield", e.player->find_spell(214577), e.item)
+                .source(e.player->get_stats("nightwell_energy_shield"))
+                .gain(e.player->get_gain("nightwell_energy_shield")))
+        {
+            
+        }
+    };
+
+    struct nightwell_energy_spell_t : public action_t
+    {
+        double stack_amt;
+        buff_t *absorb;
+
+        nightwell_energy_spell_t(const special_effect_t& e)
+            : action_t(ACTION_USE, "nightwell_energy_spell", e.player, e.player->find_spell(214577)),
+              stack_amt(e.player->find_spell(214577)->effectN(1).average(e.item)),
+              absorb(new nightwell_energy_buff_t(e))
+        {
+            background = true;
+            callbacks = false;
+            harmful = false;
+
+            // force dmg == 0 so we don't "damage" the boss with our shield...
+            base_dd_min = base_dd_max = 0;
+        }
+
+        void execute() override
+        {
+            action_t::execute();
+
+            // HACK: look for the CORRECT "nightwell_energy" buff (there are 2 with same name and source)
+            for(buff_t *b : player->buff_list)
+            {
+                if(b->check() && strcmp(b->name(), "nightwell_energy") == 0)
+                {
+                    int stacks = b->stack();
+                    absorb->trigger(1, stack_amt * stacks * (1.0 + player->cache.damage_versatility()));
+                    b->decrement(stacks);
+                }
+            }
+        }
+
+        result_e calculate_result(action_state_t* /* state */) const override
+        {
+            return RESULT_NONE;
+        }
+    };
+
+    action_t *action = effect.player->find_action("nightwell_energy_spell");
+
+    if(!action)
+        action = new nightwell_energy_spell_t(effect);
+
+    effect.buff_disabled = true;
+    effect.execute_action = action;
 }
 
 // Deteriorated Construct Core ==============================================
@@ -4154,6 +4242,8 @@ void unique_gear::register_special_effects_x7()
   register_special_effect( 215745, item::tempered_egg_of_serpentrix     );
   register_special_effect( 228461, item::gnawed_thumb_ring              );
   register_special_effect( 215404, item::naraxas_spiked_tongue          );
+  register_special_effect( 214577, item::coagulated_nightwell_residue_spell   );
+  register_special_effect( 214571, item::coagulated_nightwell_residue_buff);
 
   /* Legion 7.1 Dungeon */
   register_special_effect( 230257, item::arans_relaxing_ruby            );
