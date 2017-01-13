@@ -1923,7 +1923,7 @@ void item::goblet_of_nightmarish_ichor(special_effect_t& effect)
     double rating_amount = item_database::apply_combat_rating_multiplier(*effect.item,
         effect.driver()->effectN(2).average(effect.item));
 
-    buff_t *aura = stat_buff_creator_t(effect.player, "nightmarish_ichor",
+    buff_t *aura = stat_buff_creator_t(effect.player, "nightmarish_ichor_buff",
         effect.player->find_spell(222027), effect.item)
         .add_stat(STAT_VERSATILITY_RATING, rating_amount);
 
