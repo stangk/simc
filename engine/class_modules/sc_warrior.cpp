@@ -6637,7 +6637,6 @@ struct warrior_module_t: public module_t
     unique_gear::register_special_effect( 207775, kazzalax_fujiedas_fury_t(), true );
     unique_gear::register_special_effect( 215057, the_walls_fell ); //NYI
     unique_gear::register_special_effect( 215090, destiny_driver_t(), true );
-    unique_gear::register_special_effect( 207428, prydaz_xavarics_magnum_opus_t(), true ); //Not finished
     unique_gear::register_special_effect( 208908, mannoroths_bloodletting_manacles ); //NYI
     unique_gear::register_special_effect( 215096, najentuss_vertebrae );
     unique_gear::register_special_effect( 207767, ayalas_stone_heart_t(), true );

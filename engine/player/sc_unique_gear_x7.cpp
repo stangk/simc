@@ -106,6 +106,7 @@ namespace item
   // Legendary
   void aggramars_stride( special_effect_t& );
   void kiljadens_burning_wish( special_effect_t& );
+  void prydaz_xavarics_magnum_opus( special_effect_t& );
 
 
 
@@ -2661,6 +2662,48 @@ void item::kiljadens_burning_wish( special_effect_t& effect )
 {
   effect.execute_action = new kiljaedens_burning_wish_t( effect );
 }
+
+// Prydaz, Xavaric's Magnum Opus ============================================
+
+void item::prydaz_xavarics_magnum_opus(special_effect_t& effect)
+{
+    absorb_buff_t *abs_buff = absorb_buff_creator_t(effect.player, "xavarics_magnum_opus",
+        effect.player->find_spell(207472), effect.item)
+        .source(effect.player->get_stats("xavarics_magnum_opus"))
+        .gain(effect.player->find_gain("xavarics_magnum_opus"));
+
+    // A timespan_t longer than any reasonable simulation.
+    // You can't actually use timespan_t::max() because it'll overflow.
+    timespan_t infinite = timespan_t::from_seconds(99999);
+
+    // The buff is actually on all the time. Since I don't know a good way
+    // to model that using a special_effect_t, as a workaround, any action
+    // will proc the buff.
+    effect.proc_chance_ = 1.0;
+    effect.proc_flags_ = std::numeric_limits<unsigned>::max();
+    effect.custom_buff = buff_creator_t(effect.player,
+        "prydaz_xavarics_magnum_opus_driver", effect.player->find_spell(207472))
+        .duration(infinite)
+        .cd(infinite)
+        .quiet(true)
+        .tick_zero(true)
+        .period(timespan_t::from_seconds(30))
+        .tick_callback([effect, abs_buff](buff_t* b, int, const timespan_t& ts)
+    {
+        double buff_amt = abs_buff->player->max_health();
+
+        // TODO: avoid hardcoding
+        if(abs_buff->player->role == ROLE_TANK)
+            buff_amt *= 0.15;
+        else
+            buff_amt *= 0.25;
+
+        abs_buff->trigger(1, buff_amt * (1.0 + abs_buff->player->cache.damage_versatility()));
+    });
+
+    new dbc_proc_callback_t(effect.item, effect);
+}
+
 // Nature's Call ============================================================
 
 // Helper class so we can handle all of the procs as 1 object.
@@ -4274,6 +4317,7 @@ void unique_gear::register_special_effects_x7()
   register_special_effect( 207692, cinidaria_the_symbiote_t() );
   register_special_effect( 207438, item::aggramars_stride );
   register_special_effect( 235991, item::kiljadens_burning_wish );
+  register_special_effect( 207428, item::prydaz_xavarics_magnum_opus);
 
   /* Consumables */
   register_special_effect( 188028, consumable::potion_of_the_old_war );
